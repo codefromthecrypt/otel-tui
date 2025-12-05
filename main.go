@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.uber.org/zap"
@@ -59,6 +60,10 @@ func newCommand(params otelcol.CollectorSettings) *cobra.Command {
 		Use:          params.BuildInfo.Command,
 		Version:      params.BuildInfo.Version,
 		SilenceUsage: true,
+		Long: `A terminal OpenTelemetry viewer
+
+Environment Variables:
+  AUTH_TOKEN    Bearer token for OTLP receiver authentication (applies to both HTTP and gRPC)`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logPath, err := setLoggingOptions(&params, debugLogFlag)
 			if err != nil {
@@ -74,6 +79,7 @@ func newCommand(params otelcol.CollectorSettings) *cobra.Command {
 				promTargetFlag,
 				logPath,
 				disableInternalMetricsFlag,
+				os.Getenv("AUTH_TOKEN"),
 			)
 
 			if err != nil {
@@ -88,7 +94,7 @@ func newCommand(params otelcol.CollectorSettings) *cobra.Command {
 			configProviderSettings := otelcol.ConfigProviderSettings{
 				ResolverSettings: confmap.ResolverSettings{
 					URIs:              []string{configContents},
-					ProviderFactories: []confmap.ProviderFactory{yamlprovider.NewFactory()},
+					ProviderFactories: []confmap.ProviderFactory{yamlprovider.NewFactory(), envprovider.NewFactory()},
 				},
 			}
 
